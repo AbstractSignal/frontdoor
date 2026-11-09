@@ -10,7 +10,7 @@
 # as a file before the compiler runs - and why a changed URL is a rebuild, never a
 # restart (docs/operations.md).
 #
-# Inputs:  ./.env  (the VITE_* contract; see .env.example and docs/operations.md)
+# Inputs:  ./.env  (the VITE_* contract; infra keeps it in dashboard.env.example)
 # Output:  ./dist  (gitignored, carries the token: never commit it)
 # Env:     DASH_ENV=/path/to/.env to build with values that live elsewhere
 set -euo pipefail

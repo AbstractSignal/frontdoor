@@ -28,7 +28,7 @@ npm run build            # or bin/dashboard-build.sh: same build, plus the asser
 npm run dev              # iterate on this machine, not on the box
 ```
 
-`.env` and `dist` are gitignored: Vite inlines `import.meta.env.VITE_*`, so a committed `dist` is a
+`.env` and `dist` are gitignored here too: Vite inlines `import.meta.env.VITE_*`, so a committed `dist` is a
 committed token.
 
 ## Verify what a browser actually sees
