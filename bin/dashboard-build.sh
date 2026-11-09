@@ -60,12 +60,14 @@ done
 # so assert one host and one section id out of the JSON .env carries.
 for pair in "VITE_CADDY:host" "VITE_GROUPS:group"; do
   key=${pair%%:*}; field=${pair##*:}
-  probe=$(python3 -c '
+  # The JSON goes to python on stdin, not as a `$( )` argument: a multi-line single-quoted
+  # program inside `$( )` alongside a nested `$( )` is a bash 5.2 parse trap - it reports a
+  # syntax error many lines later and swallows the assertions below it.
+  probe=$(val "$key" | python3 -c '
 import sys, json
-raw = sys.argv[1]
-data = json.loads(raw)
+data = json.load(sys.stdin)
 first = data[1] if len(data) > 1 else data[0]
-print(first[sys.argv[2]] if isinstance(first, dict) else first)' "$(val "$key") "$field" 2>/dev/null) || true
+print(first[sys.argv[1]] if isinstance(first, dict) else first)' "$field" 2>/dev/null) || true
   [ -n "${probe:-}" ] || { echo "error: .env's $key is not the JSON list the page expects" >&2; exit 1; }
   grep -qrF "$probe" dist || {
     echo "error: the built bundle does not carry $key - the services panel would print"
