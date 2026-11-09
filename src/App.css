@@ -1,0 +1,699 @@
+/* Shell ------------------------------------------------------------------- */
+
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.75rem 1.75rem 2.5rem;
+  font-family: 'Chivo', system-ui, sans-serif;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.back {
+  display: inline-block;
+  color: var(--lan66);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.lang-switch button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--quiet);
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.lang-switch button.active {
+  color: var(--chalk);
+  border-color: var(--wire);
+}
+
+.lang-switch button:focus-visible {
+  outline: 2px solid var(--lan66);
+  outline-offset: 2px;
+}
+
+/* Shared readout rows (Homelab) ------------------------------------------- */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.status .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status.ok {
+  background: rgba(127, 182, 204, 0.12);
+  color: var(--lan66);
+}
+
+.status.ok .dot {
+  background: var(--lan66);
+}
+
+.status.bad {
+  background: rgba(207, 109, 99, 0.14);
+  color: var(--fault);
+}
+
+.status.bad .dot {
+  background: var(--fault);
+}
+
+.rows td {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.rows td:last-child {
+  text-align: right;
+  font-family: 'Chivo Mono', ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.hint,
+.placeholder {
+  max-width: 70ch;
+  color: var(--quiet);
+}
+
+/* Landing ----------------------------------------------------------------- */
+
+.home {
+  margin: 0;
+}
+
+.home h1 {
+  margin: 0 0 0.4rem;
+  font-size: 2.35rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.home-sub {
+  margin: 0.35rem 0 1.6rem;
+  max-width: 62ch;
+  color: var(--quiet);
+}
+
+/* the LAN's two halves, as one custom property each, so every element below
+   takes the same rule; `both` answers on both and gets a stripe instead */
+
+.card.v-both::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(var(--lan66) 0 50%, var(--lan69) 50% 100%);
+}
+
+/* the leases, one chip per VLAN link, so "which VLAN, what quad?" is one chip
+   and the VLAN 69 half of a box is never read as its VLAN 66 half */
+
+/* what answers in the box. A port chip that links is a port Caddy fronts a name
+   for, so the link is the fact "this port has a name you can dial" — derived per
+   quad+port from the proxy's own stanza list (src/wires.ts `DOOR`), never hand-kept
+   per port. */
+.card-port a {
+  color: var(--lan66);
+}
+
+.card-state.running {
+  border-color: rgba(79, 159, 134, 0.5);
+  color: var(--lan66);
+}
+.card-state.stopped,
+.card-state.untested {
+  border-color: rgba(207, 109, 99, 0.45);
+  color: var(--fault);
+}
+.card-owner.repo {
+  color: var(--chalk);
+  font-weight: 600;
+}
+.card-owner.foreign {
+  border-style: dashed;
+}
+.card-role.door,
+.card-role.here {
+  border-color: var(--lan66);
+  color: var(--chalk);
+}
+
+/* The Homelab panel (src/pages/Boxes.tsx): the LAN's physical boxes, nested, and
+   the doors of Caddy's own stanza list inside the box they answer from.
+
+   Nothing here is drawn on a viewBox any more (2026-10-25): the boxes are DOM
+   boxes inside boxes, so they reflow with the card at the reader's own font
+   size, and an icon row that does not fit wraps. The cable drawing this panel
+   used to share — the `g-*` rules, `.wires-graph`, a 100×74 viewBox — is gone
+   with the drawing: a rule with no element is a thing to keep in step for no
+   reader. */
+.boxes {
+  margin: 1rem 0 0.5rem;
+  border: 1px solid #4d657a;
+  border-radius: 8px;
+  background: #0d1116;
+  padding: 0.7rem 0.85rem 0.6rem;
+}
+.panel-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--chalk);
+}
+.panel-live {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--quiet);
+}
+.panel-note {
+  font-size: 0.76rem;
+  color: var(--quiet);
+  margin: 0.3rem 0 0.4rem;
+}
+/* the panel's footnote, collapsed: the readings' own explanation is long, and a
+   reader who has not misread a state yet does not need it on first look */
+.panel-details {
+  font-size: 0.76rem;
+  color: var(--quiet);
+  margin: 0.35rem 0 0.1rem;
+}
+.panel-details summary {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+}
+.panel-details summary::before {
+  content: '▸';
+  color: var(--wire);
+  transition: transform 0.12s ease;
+}
+.panel-details[open] summary::before {
+  transform: rotate(90deg);
+}
+.panel-details[open] .panel-note {
+  margin-top: 0.35rem;
+}
+
+/* a box, and the boxes inside it: `.box` is a physical box (the router, pve1,
+   pve2), `.box-guest` is a box inside one (an LXC, a VM). The label is the box's
+   own identity — name, and the quad or VMID this repo measured — in mono, which
+   is what keeps 192.168.66.2 and 192.168.66.12 apart at a glance. */
+/* two racks, not a wrap: the gear (router, switch, ap) is the LAN's own doors
+   and stacks in the left column; the hypervisors — the tall boxes with guests —
+   fill the right one, pve2 under pve1. A flex-wrap row mixed a 350px box with
+   70px ones and orphaned pve2 on a row of its own. */
+.box-lan {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+.box-rack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+/* guests flow across the width their parent box has, instead of always
+   stacking: at the right rack's width a hypervisor's guests sit two up. */
+.guests {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.3rem;
+}
+@media (max-width: 640px) {
+  .box-lan {
+    grid-template-columns: 1fr;
+  }
+}
+.box,
+.box-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border: 1px solid var(--rule);
+  padding: 0.45rem 0.55rem;
+}
+.box {
+  border-radius: 8px;
+}
+.box-guest {
+  border-radius: 6px;
+  background: #0d1116;
+  padding: 0.3rem 0.45rem;
+  min-width: 0;
+}
+.box-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--quiet);
+  white-space: nowrap;
+}
+
+/* the doors inside a box, and an icon is the link. The ring is a transparent
+   2px border on a fixed square, so a state that colours it cannot shift the row
+   by a pixel, and a 20px icon at the reader's own size is still a target a thumb
+   can hit. */
+.doors {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+.door {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.door:hover {
+  background: rgba(233, 236, 239, 0.045);
+}
+.b-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+/* the glyph the page draws for a door the pack has no glyph for (src/icons.ts
+   says why: the AP's UI is not a fact this repo has measured). It claims nothing. */
+.b-dot {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 1px solid var(--quiet);
+}
+
+/* the state mark, and it is a BORDER so it can be the one thing the owner asked
+   for: red means the browser could not dial that door. `answered` draws nothing
+   on purpose — an open door is the plain case, and a ring for it would put a
+   second mark on nine doors out of ten. */
+.door.refused {
+  border-color: var(--fault);
+}
+/* its own hue, not --lan69's amber: that is the cable encoding's claim, and a
+   state that borrowed it would read as a VLAN. Dashes and a breath, because a
+   probe that has not come back is not a dead door. */
+.door.slow {
+  border-color: var(--caution);
+  border-style: dashed;
+  animation: b-breathe 1.4s ease-in-out infinite;
+}
+@keyframes b-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+.door.none {
+  border-color: var(--quiet);
+  border-style: dotted;
+}
+/* the gated stanza: there is no door to click, so nothing links and the glyph
+   keeps its shape at a remove. */
+.door.off,
+.b-off {
+  opacity: 0.45;
+}
+
+/* the legend restates the two marks a reader can mistake, in the same rings the
+   panel draws, and the same hue bar `.legend-item` already uses elsewhere */
+.box-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--quiet);
+}
+.box-foot {
+  font-size: 0.76rem;
+  color: var(--quiet);
+  margin: 0.35rem 0 0;
+}
+/* the credit line the icons' own license asks for (src/icons.ts) */
+.box-credit {
+  font-size: 0.72rem;
+  color: var(--quiet);
+  margin: 0.3rem 0 0;
+}
+.chip {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 4px;
+  border: 2px solid transparent;
+}
+.chip.refused {
+  border-color: var(--fault);
+}
+.chip.slow {
+  border-color: var(--caution);
+  border-style: dashed;
+}
+/* the legend restates an encoding, in the same shapes the cards use, so a
+   reader never has to map a swatch to a line */
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--hue, var(--rule));
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+/* the panel's two status marks get the same hue bar the other legends use */
+.legend-item.refused {
+  --hue: var(--fault);
+}
+.legend-item.slow {
+  --hue: var(--caution);
+}
+.entries {
+  margin: 2rem 0 0;
+}
+
+.entry {
+  margin: 0 0 1.5rem;
+}
+
+.entry-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.entry-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.entry-title a:hover,
+.entry-title a:focus-visible {
+  color: var(--lan66);
+}
+
+.entry-title a:focus-visible {
+  outline: 2px solid var(--lan66);
+  outline-offset: 3px;
+}
+
+.entry-desc,
+.entry-note,
+.entry-where {
+  margin: 0.3rem 0 0;
+  color: var(--quiet);
+  max-width: 66ch;
+}
+
+.entry-note {
+  font-size: 0.9rem;
+}
+
+.entry-where {
+  font-family: 'Chivo Mono', ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: var(--wire);
+  letter-spacing: 0.01em;
+}
+
+.entry-where b {
+  color: var(--quiet);
+  font-weight: 400;
+}
+
+.ledger {
+  margin: 1.75rem 0 0;
+  color: var(--quiet);
+  font-size: 0.95rem;
+}
+
+.ledger b {
+  color: var(--chalk);
+  font-weight: 500;
+}
+
+.state {
+  margin: 1.75rem 0 0;
+  padding: 0 1rem;
+  border-left: 2px solid var(--lan66);
+  color: var(--quiet);
+  font-size: 0.95rem;
+}
+
+.state.bad {
+  border-left: 2px solid var(--fault);
+}
+
+.state b {
+  color: var(--chalk);
+  font-weight: 500;
+}
+
+.state code {
+  font-family: 'Chivo Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+  color: var(--lan66);
+}
+
+/* Home control (the smart home control center) -------------------------- */
+
+.control h1,
+.manage h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.control-sub,
+.manage-sub {
+  margin: 0.35rem 0 1.4rem;
+  max-width: 62ch;
+  color: var(--quiet);
+}
+
+.control h2,
+.manage h2 {
+  margin: 1.6rem 0 0.75rem;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--chalk);
+}
+
+/* The feed grid: three 16:9 frames, two to a row once there is room. The
+   frames come from src/components/FrigateCamera.css and are width-agnostic,
+   so the grid is the page's decision, not the component's. */
+.feed-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin: 0.35rem 0 0;
+}
+
+@media (min-width: 700px) {
+  .feed-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* The wire under each group: where the data actually comes from, in mono,
+   because it is addresses and names, not prose. */
+.wire {
+  margin: 0.75rem 0 0;
+  font-family: 'Chivo Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--wire);
+  max-width: 78ch;
+}
+
+.wire a,
+.wires th a,
+.cross a {
+  color: var(--lan66);
+  text-decoration: none;
+}
+
+.wire a:hover,
+.wires th a:hover,
+.cross a:hover {
+  text-decoration: underline;
+}
+
+.wire a:focus-visible,
+.wires th a:focus-visible,
+.cross a:focus-visible {
+  outline: 2px solid var(--lan66);
+  outline-offset: 3px;
+}
+
+.cross {
+  margin: 1.75rem 0 0;
+  color: var(--quiet);
+  font-size: 0.9rem;
+}
+
+/* Management: the wires table. Row headers carry the names, and only the two
+   boxes with a Caddy name are links (src/wires.ts SITES); the rest answer LAN
+   addresses, so the address is the fact and the dial is the reader's. */
+.wires th,
+.wires td {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  font-weight: 400;
+}
+
+.wires th {
+  font-family: 'Chivo', system-ui, sans-serif;
+  font-size: 0.95rem;
+  color: var(--chalk);
+}
+
+.wires td:first-child {
+  color: var(--quiet);
+}
+
+.wires td:last-child {
+  text-align: right;
+  font-family: 'Chivo Mono', ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: var(--wire);
+}
+
+/* The updates report (src/pages/Updates.tsx) — the checker in the services
+   box, proxied same-origin through this site's own nginx as /updates/. One row
+   per component: a state dot, the component's name and kind, and the checker's
+   own summary line. The dot borrows the door's state language: red is not
+   answering, amber is something to update; the plain case still draws a mark,
+   because a row that says nothing would read as a row that failed to load,
+   unlike a door where "no border" is the open door. */
+.updates {
+  margin-top: 2rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.25rem;
+}
+.u-totals {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--quiet);
+  margin: 0.35rem 0 0.9rem;
+}
+.u-row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(9rem, 12rem) 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.u-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  align-self: center;
+}
+.u-dot.ok {
+  background: var(--good);
+}
+.u-dot.updates {
+  background: var(--caution);
+}
+.u-dot.error {
+  background: var(--fault);
+}
+.u-name {
+  font-weight: 600;
+  color: var(--chalk);
+}
+.u-kind {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--quiet);
+}
+.u-summary {
+  font-size: 0.85rem;
+  color: var(--quiet);
+}
+.u-row.updates .u-summary {
+  color: var(--chalk);
+}
+.u-row.error .u-summary {
+  color: var(--fault);
+}
+.u-details {
+  grid-column: 2 / 4;
+}
+.u-details summary {
+  font-size: 0.75rem;
+  color: var(--quiet);
+  cursor: pointer;
+}
+.u-json {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--quiet);
+  overflow-x: auto;
+  margin: 0.25rem 0 0.5rem;
+}
+.u-error {
+  color: var(--fault);
+  font-size: 0.85rem;
+}
+.u-refresh {
+  margin-top: 0.9rem;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--chalk);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+.u-refresh:hover {
+  border-color: var(--lan66);
+}
+.u-refresh:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}

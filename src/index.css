@@ -1,0 +1,104 @@
+/* The palette the whole app answers with. Two hues carry information, not
+   decoration: the network this page runs on has two VLANs, and they are drawn
+   in these two colours on the landing map (66 = the managed side, 69 = the
+   house side with no internet path). Everything else is ink and chalk.
+
+   The font files are vendored in public/fonts (woff2, OFL, see
+   LICENSE-chivo.txt) because a LAN page must not depend on a font CDN. */
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-400.woff2) format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-ext-400.woff2) format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-500.woff2) format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-ext-500.woff2) format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-700.woff2) format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Chivo';
+  src: url(/fonts/chivo-latin-ext-700.woff2) format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Only for dotted quads and VLAN tags - the addresses are the data, and the
+   monospace face is what keeps 192.168.66.6 and 192.168.66.12 apart at a
+   glance. Never for prose. */
+@font-face {
+  font-family: 'Chivo Mono';
+  src: url(/fonts/chivo-mono-latin-400.woff2) format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+
+  --night: #101820;
+  /* denser, higher-contrast ink than the 2026-10-20 panel had: chip borders at
+     #34485a read against both card faces, and `quiet` prose sits at 7.4:1 on the
+     lightest card background (measured, not eyeballed) rather than the 6.3:1 the
+     old value gave. Only prose is lightened; the VLAN hues stay the data colours. */
+  --rule: #34485a;
+  --wire: #3d5261;
+  --chalk: #e9ecef;
+  --quiet: #9aabb6;
+  --lan66: #7fb6cc;
+  --lan69: #d3a15c;
+  --fault: #cf6d63;
+  /* a probe that has not come back: its own hue, because --lan69's amber is
+     VLAN69's claim and a state that borrowed it would read as a cable. */
+  --caution: #d9a24f;
+  /* the plain state: nothing to do. Muted like the other state marks, and not
+     a VLAN hue — a state that borrowed one would read as a cable. */
+  --good: #7fbf8e;
+
+  /* the monospace face, for dotted quads and VLAN tags only — the addresses
+     are the data, and mono is what keeps 192.168.66.6 and 192.168.66.12 apart
+     at a glance. Never for prose. */
+  --mono: 'Chivo Mono', ui-monospace, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--chalk);
+  font-family: 'Chivo', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
