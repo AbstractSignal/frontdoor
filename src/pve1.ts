@@ -6,15 +6,17 @@
                    from the proxy.
      src/pve1.ts   what the NODE reports: VMID, resource kind, which VLAN link
                    a guest carries, which lease that link got, what answers in
-                   it. Read off the node (PVE 8.4.19, repoid a68fb383) and
-                   measured in docs/proxmox/node.md + docs/network/topology.md.
+                   it. Read off the node (PVE 9.2.31) and measured in
+                   docs/proxmox/node.md + docs/network/topology.md.
 
    A guest's lease and the quad you dial are NOT the same fact, and the old
    hero drew one number for both:
      - VMID 110 answers its own VLAN66 lease (.66.6) AND a VLAN69 lease
        (.69.22) — two links, two leases, one box.
-     - PBS's and Frigate's ports live INSIDE the services box (VMID 120);
-       they are ports, not containers, and the node says so.
+     - PBS and Frigate were both ports INSIDE the services box until 2026-11-18; PBS is
+       a BOX of its own now (CT135, 192.168.66.61) and Frigate is still a port.
+       A door's backend quad is the fact that says which, and it is the proxy's, not
+       this file's.
    So this file answers "which box is this, and what is on it"; wires.ts
    answers "how do I reach it".
 
@@ -74,7 +76,7 @@ export const NODE: Resource = {
 /* The node, as PVE states it: version, and the day this file's facts were read
    off it. A node has no VMID, and this file does not carry the node's repoid —
    a reader of a LAN page does not dial a repoid. */
-export const PVE = { name: 'pve1', version: '8.4.19', measured: '2026-10-18' };
+export const PVE = { name: 'pve1', version: '9.2.31', measured: '2026-11-20' };
 
 /* VLAN pools on vmbr0 — the LAN's two halves, and the hue every card is
    bordered in (ansible/group_vars/router `vlan_pools` + `zones` is the
@@ -92,11 +94,18 @@ export const POOLS: { id: string; k: string }[] = [
    left is what the node said on 2026-10-18 — the list has not been re-read
    off the node since, and this session had no way to read it (no host alias
    `pve1` resolves here). */
+/* Every resource the node reports, in VMID order — the order PVE's own list
+   prints, so a new guest lands where the node would put it. Re-read off the node on
+   2026-11-20 (the status read, `/cluster/resources`, infra `docs/services/updates.md`).
+   Slots this list skips because the node has nothing in them: 100, 102 and 105 (the
+   three guide boxes the owner deleted on 2026-10-22) and 120 — pve1's services box came
+   back from an archive as **121** on 2026-11-11, and the only #120 on this LAN is pve2's
+   `ai-node0`. A page that drew pve1's services box as #120 was naming pve2's GPU box. */
 export const RESOURCES: Resource[] = [
   {
     vmid: 101,
     kind: 'vm',
-    name: 'haos',
+    name: 'haos13.1',
     pool: 'both',
     leases: [ADDR.ha, '192.168.69.20'],
     vlans: ['66', '69'],
@@ -104,6 +113,21 @@ export const RESOURCES: Resource[] = [
     state: 'running',
     ports: [{ p: ':8123', k: 'ui_ha', site: 'ha' }],
     note: 'note_ha',
+  },
+  {
+    /* unraid HAS a VMID now (106). The page used to draw it with `vmid: null` because the
+       repo modelled it as a guest it did not own; it is claimed and audited now
+       (`owner: appliance` in the pve1 manifest), so a reader can name the slot. */
+    vmid: 106,
+    kind: 'vm',
+    name: 'unraid',
+    pool: '66',
+    leases: [ADDR.unraid],
+    vlans: ['66'],
+    owner: 'repo',
+    state: 'running',
+    ports: [{ p: ':80', k: 'ui_unraid' }],
+    note: 'note_unraid',
   },
   {
     vmid: 110,
@@ -114,12 +138,15 @@ export const RESOURCES: Resource[] = [
     vlans: ['66', '69'],
     owner: 'repo',
     state: 'running',
-    ports: [{ p: ':53', k: 'ui_dns' }, { p: ':443', k: 'ui_caddy' }, { p: ':1813', k: 'ui_gree' }, { p: ':8443', k: 'ui_dns_console' }],
+    /* `:1813` (the Gree leg) left this box on 2026-10-31: it runs on the ROUTER as a procd
+       service now (infra `docs/services/gree.md`), so the front-door box carries the door,
+       DNS and DNS console, and nothing else. */
+    ports: [{ p: ':53', k: 'ui_dns' }, { p: ':443', k: 'ui_caddy' }, { p: ':8443', k: 'ui_dns_console' }],
     note: 'note_v110',
     role: 'door',
   },
   {
-    vmid: 120,
+    vmid: 121,
     kind: 'lxc',
     name: 'services',
     pool: '66',
@@ -129,23 +156,25 @@ export const RESOURCES: Resource[] = [
     state: 'running',
     ports: [
       { p: ':8080', k: 'ui_dashboard' },
-      { p: ':8007', k: 'ui_pbs', site: 'pbs' },
       { p: ':5000', k: 'ui_frigate_new', site: 'frigate' },
     ],
     note: 'note_v120',
     role: 'here',
   },
   {
-    vmid: null,
-    kind: 'vm',
-    name: 'unraid',
+    /* PBS is a BOX, not a port inside another box: it moved to CT135 on 2026-11-18 (infra
+       `docs/services/pbs.md`), its door proxies to .61:8007, and "is the backup server up?"
+       now has one box to walk to. */
+    vmid: 135,
+    kind: 'lxc',
+    name: 'pbs',
     pool: '66',
-    leases: [ADDR.unraid],
+    leases: [ADDR.pbs],
     vlans: ['66'],
-    owner: 'foreign',
+    owner: 'repo',
     state: 'running',
-    ports: [{ p: ':80', k: 'ui_unraid' }],
-    note: 'note_unraid',
+    ports: [{ p: ':8007', k: 'ui_pbs', site: 'pbs' }],
+    note: 'note_pbs',
   },
 ];
 

@@ -296,6 +296,7 @@
   gap: 0.2rem;
 }
 .door {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -322,16 +323,36 @@
 }
 
 /* the state mark, and it is a BORDER so it can be the one thing the owner asked
-   for: red means the browser could not dial that door. `answered` draws nothing
-   on purpose — an open door is the plain case, and a ring for it would put a
-   second mark on nine doors out of ten. */
+   for: red means the door did not answer. Since 2026-11-20 the border is drawn from a
+   LAN-side reading (src/status.ts), which is the only seat that can read a status code, so
+   the marks are the codes: `backend_down` (a Caddy 502: the front door is up, what is
+   behind it is not) is a THICK red ring and `refused` (no socket at all) is the plain one.
+   `answering` draws nothing on purpose — an open door is the plain case, and a ring for it
+   would put a second mark on eleven doors out of twelve. */
 .door.refused {
   border-color: var(--fault);
 }
+/* the mark this page could not draw before: it is a fault, so it is the fault's hue, and it
+   is THICKER than a refusal because it is the worse of the two — the door you can see is up
+   and the service behind it is gone. A 3px border would move the row by a pixel, so the
+   weight is a ring outside the fixed 2px one. */
+.door.backend_down {
+  border-color: var(--fault);
+  box-shadow: 0 0 0 2px var(--night), 0 0 0 4px var(--fault);
+}
+/* a door that answers behind a login: a caveat, not a fault, and not the plain case either. */
+.door.auth {
+  border-color: var(--caution);
+  border-style: dotted;
+}
 /* its own hue, not --lan69's amber: that is the cable encoding's claim, and a
    state that borrowed it would read as a VLAN. Dashes and a breath, because a
-   probe that has not come back is not a dead door. */
-.door.slow {
+   dial that got no answer is not a dead door. `timeout`, `no_name` and `error` are
+   the LAN reading's words for the same honest state. */
+.door.slow,
+.door.timeout,
+.door.no_name,
+.door.error {
   border-color: var(--caution);
   border-style: dashed;
   animation: b-breathe 1.4s ease-in-out infinite;
@@ -348,8 +369,103 @@
 /* the gated stanza: there is no door to click, so nothing links and the glyph
    keeps its shape at a remove. */
 .door.off,
+.door.disabled,
 .b-off {
   opacity: 0.45;
+}
+/* a door that answered with something that is not a page: 302 (unraid sends its browser to
+   plain http) or 404. The door is open, so the ring stays empty, and the corner tick says
+   "it answered, and it pointed elsewhere" rather than letting an open door look like a page. */
+.door.redirect,
+.door.no_route {
+  position: relative;
+}
+.tick {
+  position: absolute;
+  top: 0.05rem;
+  right: 0.15rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-top: 2px solid var(--lan66);
+  border-right: 2px solid var(--lan66);
+  border-radius: 0 4px 0 0;
+}
+/* the two-seats mark: the LAN dial and THIS browser disagree about this door. Drawn on the
+   icon and named in its title, because smoothing a disagreement into one mark is how a dead
+   service gets drawn open (that is exactly what 2026-11-08's four 502 doors looked like). */
+.door > .seat {
+  position: absolute;
+  bottom: 0.1rem;
+  right: 0.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--caution);
+}
+.door.redirect > .seat,
+.door.no_route > .seat {
+  bottom: 0.05rem;
+}
+
+/* a guest's state, in its NODE's words (`/cluster/resources`), and a container's, in Docker's
+   words (`docker ps -a`). A stopped guest is DIMMED, not red: `ai-node0` and `dev-box` are
+   stopped on purpose and a fault mark would be a lie about a decision. */
+.g-state {
+  font-size: 0.7rem;
+  color: var(--good);
+  white-space: nowrap;
+}
+.g-state.stopped,
+.g-state.unreported {
+  color: var(--quiet);
+}
+.g-state.unreachable {
+  color: var(--fault);
+}
+.box-guest.stopped {
+  opacity: 0.72;
+}
+.containers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.68rem;
+  color: var(--quiet);
+}
+.container.running {
+  color: var(--good);
+}
+.container.exited,
+.container.dead,
+.container.restarting,
+.container.created {
+  color: var(--caution);
+}
+
+/* the panel's own line when the LAN reading is missing, and the control that asks for a new
+   one. An empty panel must never be readable as a healthy one. */
+.status-error {
+  font-size: 0.78rem;
+  color: var(--caution);
+  border: 1px dashed var(--caution);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin: 0.35rem 0 0;
+}
+.read-now {
+  font: inherit;
+  font-size: 0.74rem;
+  color: var(--chalk);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  margin-left: 0.4rem;
+  cursor: pointer;
+}
+.read-now:hover {
+  border-color: var(--wire);
 }
 
 /* the legend restates the two marks a reader can mistake, in the same rings the
@@ -382,9 +498,26 @@
 .chip.refused {
   border-color: var(--fault);
 }
-.chip.slow {
+.chip.backend_down {
+  border-color: var(--fault);
+  box-shadow: 0 0 0 1px var(--night), 0 0 0 3px var(--fault);
+}
+.chip.auth {
+  border-color: var(--caution);
+  border-style: dotted;
+}
+.chip.slow,
+.chip.timeout {
   border-color: var(--caution);
   border-style: dashed;
+}
+.chip.disabled {
+  opacity: 0.45;
+}
+.chip.seat {
+  border-color: var(--caution);
+  border-radius: 50%;
+  background: var(--caution);
 }
 /* the legend restates an encoding, in the same shapes the cards use, so a
    reader never has to map a swatch to a line */
@@ -398,11 +531,18 @@
   padding: 0.1rem 0.55rem;
 }
 /* the panel's two status marks get the same hue bar the other legends use */
-.legend-item.refused {
+.legend-item.refused,
+.legend-item.backend_down {
   --hue: var(--fault);
 }
-.legend-item.slow {
+.legend-item.slow,
+.legend-item.timeout,
+.legend-item.auth,
+.legend-item.seat {
   --hue: var(--caution);
+}
+.legend-item.disabled {
+  --hue: var(--quiet);
 }
 .entries {
   margin: 2rem 0 0;

@@ -10,16 +10,14 @@
        INSIDE pve1's box, which is what the owner asked for on 2026-10-24.
      - the LAN's own devices (`OFF`) are the network-gear cluster: the router,
        the switch, the AP.
-     - pve2 is a second Proxmox install on the same LAN, measured on the node
-       itself 2026-10-24 — see ansible/group_vars/pve2/main.yml and
-       docs/network/topology.md. This repo owns that node (terraform/pve2/,
-       group_vars/pve2/) and owns TWO of its guests (120 `ai-node0` .66.58, 130
-       `ai-node1` .66.59 — `pve_managed_vmids` there is [120, 130] since 2026-11-08);
-       100 `docker-arr` (.66.53), 101 `immich` (.66.30) and 102 `dev-box` stay
-       foreign, with no Caddy stanza of this repo in front of them. Both owned
-       guests carry doors (`ai`, `strata`) whose backends cross nodes — Caddy sits
-       on pve1's infra box — but the box a door sits in is the lease's owner, so
-       those icons are drawn inside pve2's box, not pve1's.
+     - pve2 is a second Proxmox install on the same LAN. This repo owns that node
+       (`ansible/group_vars/pve2/`) and owns THREE of its guests (120 `ai-node0` .66.58, 130
+       `ai-node1` .66.59, 140 `pi-node` .66.60 — `pve_managed_vmids` there is [120, 130, 140]
+       since 2026-11-11); 100 `docker-arr` (.66.53), 101 `immich` (.66.30) and 102 `dev-box`
+       (.65.183) are `owner: appliance` in the same manifest: claimed and audited, never
+       rebuilt. Both GPU boxes carry doors (`ai`, `strata`) whose backends cross nodes — Caddy
+       sits on pve1's infra box — but the box a door sits in is the lease's owner, so those
+       icons are drawn inside pve2's box, not pve1's.
 
    Two traps the mapping has to keep apart, both measured:
      - VMID ids collide across installs. pve1's 101 is `haos`; pve2's 101 is
@@ -44,8 +42,8 @@ import { ADDR } from './wires';
    PVE advertises for it (`pvesh get /nodes`), which is not the same string on
    pve2 and is why 10-node-prep.yml asserts the two agree. */
 export const INSTALLS: { key: string; name: string; node: string; version: string; quad: string; measured: string }[] = [
-  { key: 'pve1', name: 'pve1', node: 'pve', version: '8.4.19', quad: ADDR.proxmox, measured: '2026-10-18' },
-  { key: 'pve2', name: 'pve2', node: 'proxmox2', version: '9.2.2', quad: '192.168.66.3', measured: '2026-10-24' },
+  { key: 'pve1', name: 'pve1', node: 'proxmox', version: '9.2.31', quad: ADDR.proxmox, measured: '2026-11-20' },
+  { key: 'pve2', name: 'pve2', node: 'proxmox2', version: '9.2.31', quad: '192.168.66.3', measured: '2026-11-20' },
 ];
 
 /* pve2's guests that still EXIST, as that node reported them (`pct list`/`qm list`
@@ -54,12 +52,23 @@ export const INSTALLS: { key: string; name: string; node: string; version: strin
    rather than invented. The leases that DO name are router DHCP pins
    (ansible/group_vars/router/main.yml): ai-node0 C0:FF:F3 -> .58, ai-node1
    C0:FF:F4 -> .59 — the same quads the `ai` and `strata` Caddy backends dial. */
+/* pve2's guests that EXIST, as that node reported them on 2026-11-20 (`pct list`/`qm list`,
+   and `bin/guest-leases.py pve2` for the leases). `FOREIGN` is the PAGE's word, not the
+   manifest's: 120/130/140 are `owner: repo` in `ansible/group_vars/pve2/guests.yml` and
+   100/101/102 are `owner: appliance`, so what this list means is "a guest on the second
+   install the page draws a row for". `dev-box` carries a .65-family address, not a VLAN66
+   one, and it is stopped; `ai-node0` is stopped too, on purpose, which is why the updates
+   read reports it as an error row and why a red mark on it would be a lie about a decision. */
 export const FOREIGN: { key: string; vmid: number; kind: 'lxc' | 'vm'; lease: string }[] = [
   { key: 'docker-arr', vmid: 100, kind: 'lxc', lease: '192.168.66.53' },
   { key: 'immich', vmid: 101, kind: 'lxc', lease: '192.168.66.30' },
-  { key: 'dev-box', vmid: 102, kind: 'vm', lease: '' },
+  { key: 'dev-box', vmid: 102, kind: 'vm', lease: '192.168.65.183' },
   { key: 'ai-node0', vmid: 120, kind: 'lxc', lease: '192.168.66.58' },
   { key: 'ai-node1', vmid: 130, kind: 'lxc', lease: '192.168.66.59' },
+  /* 140 `pi-node` was missing from this list entirely — the node has run it since the pve2
+     cutover, it is `owner: repo`, it has no Caddy door, and a guest the page does not list is
+     a guest no reader can see is down. It is also the box this repo's own commands run from. */
+  { key: 'pi-node', vmid: 140, kind: 'lxc', lease: '192.168.66.60' },
 ];
 
 /* A guest that is GONE but whose doors are still declared. The doors stay rows

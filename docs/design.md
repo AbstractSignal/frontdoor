@@ -88,28 +88,43 @@ icon per service — no cable picture, no side list of names, no section headers
 - **the gear** (`src/pve1.ts` `OFF`): the router's, the switch's and the AP's
   boxes, each carrying the one door its lease fronts. No quad is printed on them —
   the box's own label is enough, and the owner asked for icons, not text.
-- **pve1 and its guests**: the node's row carries PVE's UI; the infra LXC carries
-  the Technitium console; the services LXC carries this page, the NVR and PBS;
-  haos carries Home Assistant; Unraid carries its own UI. The box is the LEASE's
+- **pve1 and its guests**: the node's row carries PVE's UI; the infra LXC (#110) carries
+  the Technitium console; the services LXC (#121) carries this page and the NVR; **pbs (#135)**
+  carries the backup server, because PBS left the services box for a box of its own on 2026-11-18
+  (infra `docs/services/pbs.md`); `haos13.1` (#101) carries Home Assistant; `unraid` (#106) carries
+  its own UI. The box is the LEASE's
   owner, never the stanza's `group` — that mapping is `src/boxes.ts` `CLUSTER`,
   built from the leases the installs report, so a retargeted stanza moves its
   icon and a new pve1 guest needs no edit in `src/`.
-- **pve2**, the second install (`192.168.66.3`, PVE 9.2.2, measured on the node
-  2026-10-24): drawn as a box because it is a physical box on this LAN, and
-  carrying NO icon, because no stanza of this repo's proxy fronts it or any of
-  its three foreign guests — they are nested boxes of their own (`#pve2 100
-  docker-arr`, `#pve2 101 immich`, `#pve2 102 dev-box`), each empty. An empty box
-  is the honest answer to "can I reach pve2 from here".
+- **pve2**, the second install (`192.168.66.3`, PVE 9.2.31, re-read 2026-11-20): drawn as a box
+  because it is a physical box on this LAN, and carrying NO icon on its own row, because no stanza
+  of this proxy fronts the node itself. Four of its guests are doorless — `#pve2 100 docker-arr`,
+  `#pve2 101 immich`, `#pve2 102 dev-box` (its lease is in the .65 family, .183) and `#pve2 140
+  pi-node` — each an empty box, which is the honest answer to "can I reach pve2 from here". Its two
+  GPU guests DO carry doors (`ai`, `strata`), drawn inside pve2 because the lease's owner is the box,
+  not the box Caddy happens to run on. `ai-node0` is stopped ON PURPOSE, and the page now says the
+  node's own word for that instead of leaving a reader to guess.
 
 What a door carries: its glyph (src/icons.ts, a name → file map into the vendored
 icon set below, and a door with no entry gets a ring the page draws rather than a
 guessed logo), its link target (the stanza's own host — the icon IS the door), and
-its border, which is the page's own probe (`fetch(url,{mode:'no-cors'})`: answered
-→ no border, refused → red, slow → amber dashes, gated `enabled: false` → dimmed).
+its border, which since 2026-11-20 is a **LAN-side reading** (`src/status.ts` → the infra repo's
+updates checker, `GET /updates/status`): `answering` (200) draws nothing, `redirect` (302) and
+`no_route` (404) draw a corner tick, `auth` (401/403) a dotted ring, **`backend_down`
+(502/503/504) the fault's hue at double weight** — the front door is up and what is behind it is
+not — `refused` the plain fault ring, `timeout`/`no_name`/`error` amber dashes, and a gated
+`enabled: false` stanza dimmed. The page's own probe (`fetch(url,{mode:'no-cors'})`) is kept as the
+SECOND seat's reading and draws a pip only where the two disagree, and the tooltip names which seat
+a mark came from (`mark_lan` / `mark_seat`).
 Its name is on the anchor itself — `title` (the tooltip) and `aria-label` (the
 accessible name) — and the words are the `name_*`/`ui_dns_console` keys both dicts
 already carry, so a service is named once across the app. A glyph may not carry a
 name, an address or a state.
+
+What a door cannot carry, and what the panel draws beside it instead: whether a GUEST is running
+(`.g-state`, the node's own word from `/cluster/resources`) and what CONTAINERS are up inside a box
+(`.containers`, Docker's own word from `docker ps -a`). A door says nothing about a stopped box or
+an exited container, and `#120 ai-node0` stopped on purpose must not borrow a dead service's mark.
 
 The glyphs are the selfh.st icon pack, vendored (2026-10-25, at the owner's request
 to use selfh.st/apps icons): `public/assets/icons/<name>.v4.0.3.svg`,
@@ -178,6 +193,11 @@ To find entities on HA 2026.9.1, use REST `GET /api/states` (444 entities, 3 `ca
 cannot be reached (long-lived JWT refused — `docs/devices/home-assistant.md`).
 
 ## Why
+
+- **2026-11-20** the door marks moved to a seat that can read a status code: `no-cors` reports only "a socket opened", so four Caddy 502s on 2026-11-08 were drawn open — the state is now read inside the LAN by infra's updates checker (`src/status.ts` → `GET /updates/status`) and the browser's own dial survives as the second seat, with a pip where the two disagree
+- **2026-11-20** a door's box is decided by its backend quad, so an unresolved placeholder is a door with no box: `pbs.abstractsignal.com` proxied to `{{ pbs_box_ip }}`, the bundle carried the raw text, `quad` parsed to `''`, and PBS was drawn on pve1's NODE row instead of in its own #135 box — `ADDR.pbs` is `192.168.66.61` and `wires.ts` fills `pbs_box_ip` the way it already filled `services_ip`
+- **2026-11-20** a stopped guest is not a fault: `#120 ai-node0` and `#102 dev-box` are stopped on purpose, so the page prints the node's own word (`running` / `stopped`, from `/cluster/resources`) beside the guest box and dims it rather than marking it red — the door mark cannot say this at all
+- **2026-11-20** the page drew a services box at `#120` on pve1 while pve1's services box has been `#121` since 2026-11-11, and `#120` on this LAN is pve2's `ai-node0`: two different boxes, one number, one page that would have named the wrong one. `pi-node` (#140, .66.60 — the box these repos' own commands run from) was missing from the pve2 list entirely, and a guest the page does not list is a guest no reader can see is down
 
 - **2026-10-15** the dashboard is a gethomepage v2 on the infra box, gated off CT110 — `git:memory/decisions.md#L1067`
 - **2026-10-16** mixed content is what decides the URL shapes: an https page cannot open `ws://` — `git:memory/decisions.md#L1106`

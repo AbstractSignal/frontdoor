@@ -18,17 +18,16 @@ export const ADDR: Record<string, string> = {
   infra: '192.168.66.6',
   services: '192.168.66.12',
   ha: '192.168.66.20',
-  /* PBS and Frigate are ports INSIDE the services box, not boxes of their own -
-     that is why their quads repeat `services` here. They still get a key each,
-     because the map draws one point per key and both are things you dial: PBS
-     answers :8007 and the NVR answers :5000, and a page that lists only the
-     container cannot say which of the three things at 192.168.66.12 is down.
-     The unit of this list is "can I dial this?", not "which LXC owns this
-     lease" - infra/services are the PVE-ownership fact, kept in
-     group_vars/proxmox/main.yml's pve_managed_vmids, and this page is not that
-     question. */
+  /* Frigate is a port INSIDE the services box. PBS is not, and has not been since 2026-11-18:
+     it is its own container, **CT135**, at its own lease (.61), with its own door. Both still
+     carry a key here because the map draws one point per key and both are things you dial
+     (:5000 and :8007) — and while PBS shared the services box, a PBS failure and a frigate
+     failure looked identical from a door list, which is the reason this file exists at all.
+     The unit of this list is "can I dial this?", not "which LXC owns this lease"
+     — infra/services are the PVE-ownership fact, kept in the node's `pve_managed_vmids`,
+     and this page is not that question. */
   frigate: '192.168.66.12',
-  pbs: '192.168.66.12',
+  pbs: '192.168.66.61',
   /* pve2's two GPU boxes this repo's Caddy dials across nodes: llama.cpp on ai-node0 and
      Strata on ai-node1. Their quads are the router DHCP pins (ansible/group_vars/router/main.yml:
      C0:FF:F3 -> .58, C0:FF:F4 -> .59) and the same values terraform/pve2 reports as
@@ -68,14 +67,15 @@ export const SITES: Record<string, string> = {
    A disabled stanza keeps its row, because "there is no door for this now" is
    something a reader should still see rather than a silently missing line.
 
-   `{{ services_ip }}` arrives as a placeholder and is filled from ADDR above:
-   the quad is one fact in one file, and the Caddy backend is written with that
-   variable for the same reason. The pve2 backends (`{{ pve2_ai_node0_ip }}`, `{{ pve2_ai_node1_ip }}`) are filled the same way
-   from ADDR.aiNode0 / ADDR.aiNode1: their values are Terraform outputs Ansible reads at run time,
-   so the build (bin/dashboard-build.sh, no Ansible) cannot resolve them and leaves them raw, and a
-   raw placeholder would give the door a quad nothing owns - the `strata` door was drawn with
-   `{{ pve2_ai_node1_ip }}` as its quad until 2026-11-08 because this list had no entry for the
-   second GPU box. The door's own
+   `{{ services_ip }}` and `{{ pbs_box_ip }}` arrive as placeholders and are filled from ADDR
+   above: the quad is one fact in one file, and the Caddy backends are written with those
+   variables for the same reason. The pve2 backends (`{{ pve2_ai_node0_ip }}`, `{{ pve2_ai_node1_ip }}`)
+   are filled the same way from ADDR.aiNode0 / ADDR.aiNode1: their values are leases Ansible reads
+   at run time, so the build (bin/dashboard-build.sh, no Ansible) cannot resolve them and leaves
+   them raw, and a raw placeholder would give the door a quad nothing owns — the `strata` door was
+   drawn with `{{ pve2_ai_node1_ip }}` as its quad until 2026-11-08 because this list had no entry for
+   the second GPU box, and the `pbs` door was placed in the SERVICES box until 2026-11-20 because
+   `pbs_box_ip` had no fill here (which is also why it could not be seen as its own box). The door's own
    scheme is always https (Caddy terminates TLS at :443 with a Let's Encrypt
    cert); the UPSTREAM scheme is what the backend says, and it is printed because
    it is the thing that makes a self-signed quad answer at all. */
@@ -88,6 +88,7 @@ export const CADDY: { name: string; host: string; enabled: boolean; quad: string
   !rawCaddy ? [] : (JSON.parse(rawCaddy) as CaddySite[]).map((s) => {
     const backend = s.backend
       .replace('{{ services_ip }}', ADDR.services)
+      .replace('{{ pbs_box_ip }}', ADDR.pbs)
       .replace('{{ pve2_ai_node0_ip }}', ADDR.aiNode0)
       .replace('{{ pve2_ai_node1_ip }}', ADDR.aiNode1);
     const m = /^(https?):\/\/([^:/]+)(?::(\d+))?/.exec(backend);
