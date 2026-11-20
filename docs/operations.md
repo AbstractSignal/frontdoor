@@ -25,11 +25,11 @@ because iterating on the app still happens here.
 
 ```bash
 make dashboard-build      # infra: clones this repo into vendor/frontdoor/, renders .env from its group_vars + SOPS, runs bin/dashboard-build.sh there
-make services-bootstrap   # sshd ON THE NODE for VMID 120 (only a fresh box needs it)
-make services             # infra playbooks/services-lxc.yml: Docker + nginx + push vendor/frontdoor/dist + the PBS image
-make verify               # probes the box: container running, page 200, /ha-api reaches HA
-make pbs-remotes          # what PVE's pbs backup remotes say (read-only)
-make pbs-remotes-apply    # re-point them at this box (writes on the NODE, needs the SOPS credential)
+make services-bootstrap   # sshd ON THE NODE for VMID 121 (only a fresh box needs it)
+make services             # infra playbooks/services-lxc.yml: Docker + nginx + push vendor/frontdoor/dist + the updates checker
+make verify               # probes the box: containers running, page 200, /ha-api reaches HA, frigate + go2rtc answer, /updates/status answers with every door
+make pbs-box              # PBS is its OWN box now (CT135, 192.168.66.61) — read what PVE's remotes say
+make pbs-box-apply        # re-point PVE's pbs remotes at it (writes on the NODE, needs the SOPS credential)
 ```
 
 Order matters and each step asserts the previous one, with the reason. A fresh
@@ -114,15 +114,22 @@ as a clickable icon:
   `name_*`/`ui_dns_console` keys both dicts already carry. No icon text, no second
   mark. A door with no entry in that map gets a ring the page draws, not a guessed
   logo — `ap1` is that case, since this repo never measured what the AP's UI is.
-- the border is the page's own probe (`fetch(url,{mode:'no-cors'})`): answered draws
-  no border, refused draws RED (the owner's ask, and this page's one status
-  indicator), slow draws amber dashes and breathes, a gated stanza (`enabled: false`)
-  is dimmed and links nothing.
-- pve2 (`192.168.66.3`, PVE 9.2.2, measured on the node 2026-10-24) carries two live
-  doors and one retired row since 2026-11-08: `ai` (ai-node0 `.66.58`) and `strata`
+- the border is a **LAN-side reading** since 2026-11-20 (`src/status.ts`, the infra repo's updates
+  checker at same-origin `/updates/status`): `answering` (200) draws no border, `redirect`/`no_route`
+  a corner tick, `auth` (401/403) a dotted ring, `backend_down` (502/503/504) the fault ring at double
+  weight — the front door is up and what is behind it is not — `refused` the plain fault ring,
+  `timeout`/`no_name`/`error` amber dashes, a gated stanza (`enabled: false`) dimmed and linking
+  nothing. The page's own `no-cors` probe is kept as the second seat and draws a pip only where the
+  two disagree (a browser dialling another origin cannot read a status code at all, which is how four
+  dead doors looked open on 2026-11-08). Beside each guest box the panel prints the NODE's own word
+  for it (`running` / `stopped`) and, inside the two Docker boxes, each container's Docker word
+  (`running` / `exited`): a door cannot express either, and a guest stopped ON PURPOSE is dimmed,
+  not marked red.
+- pve2 (`192.168.66.3`, PVE 9.2.31, re-read 2026-11-20) carries two live doors and one retired row
+  since 2026-11-08: `ai` (ai-node0 `.66.58`, the box is stopped on purpose) and `strata`
   (ai-node1 `.66.59`) are drawn inside their own guest rows, `#pve2 100 docker-arr`,
-  `#pve2 101 immich` and `#pve2 102 dev-box` stay empty (foreign, no stanza of this
-  repo), and `#pve2 110 docker-node1 RETIRED` is a row `src/boxes.ts` `RETIRED` draws
+  `#pve2 101 immich`, `#pve2 102 dev-box` (.65.183) and `#pve2 140 pi-node` (.66.60) stay empty
+  (no stanza of this repo in front of them), and `#pve2 110 docker-node1 RETIRED` is a row `src/boxes.ts` `RETIRED` draws
   so the three dark doors that still name `.56` land in the box that held the guest
   instead of being orphaned into pve1's row. A guest the page no longer has gets that
   row rather than deletion: `src/wires.ts` keeps a disabled stanza as a row, and a
